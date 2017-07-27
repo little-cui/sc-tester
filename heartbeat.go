@@ -7,12 +7,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
-const (
-	SERVER_ADDRESS = "127.0.0.1:30100"
-	API            = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
-)
+const API = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
 
 var HEADERS http.Header = http.Header{
 	"X-Domain-Name": []string{"default"},
@@ -24,12 +22,15 @@ func main() {
 	instanceId := helper.GetServiceCenterInstanceId(serviceId)
 	u := url.URL{
 		Scheme: "http",
-		Host:   SERVER_ADDRESS,
+		Host:   helper.GetServiceCenterAddress(),
 		Path:   strings.Replace(strings.Replace(API, ":serviceId", serviceId, 1), ":instanceId", instanceId, 1),
 	}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	req.Header = HEADERS
+
+	t := time.Now()
 	resp, err := http.DefaultClient.Do(req)
+	fmt.Println("spend:", time.Now().Sub(t))
 	if err != nil {
 		panic(err)
 	}
@@ -37,5 +38,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(resp.StatusCode, string(body))
+	fmt.Println(resp.StatusCode, string(body), time.Now().Sub(t))
 }

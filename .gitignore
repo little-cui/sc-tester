@@ -16,3 +16,5 @@
 .idea/
 vendor/**
 !vendor/manifest
+
+sc-tester.iml

@@ -31,6 +31,10 @@ type Instance struct {
 	InstanceId string `json:"instanceId"`
 }
 
+func GetServiceCenterAddress() string {
+	return SERVER_ADDRESS
+}
+
 func GetServiceCenterId() string {
 	u := url.URL{
 		Scheme: "http",

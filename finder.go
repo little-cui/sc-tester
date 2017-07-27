@@ -9,10 +9,7 @@ import (
 	"strings"
 )
 
-const (
-	SERVER_ADDRESS = "127.0.0.1:30100"
-	API            = "/registry/v3/microservices/:serviceId/instances"
-)
+const API = "/registry/v3/microservices/:serviceId/instances"
 
 var HEADERS http.Header = http.Header{
 	"X-Domain-Name": []string{"default"},
@@ -25,7 +22,7 @@ func main() {
 		Method: "GET",
 		URL: &url.URL{
 			Scheme: "http",
-			Host:   SERVER_ADDRESS,
+			Host:   helper.GetServiceCenterAddress(),
 			Path:   strings.Replace(API, ":serviceId", serviceId, 1),
 		},
 		Header: HEADERS,

@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	SERVER_ADDRESS = "127.0.0.1:30100"
-	LISTWATCH_API  = "/registry/v3/microservices/:serviceId/listwatcher"
-	WATCH_API      = "/registry/v3/microservices/:serviceId/watcher"
+	LISTWATCH_API = "/registry/v3/microservices/:serviceId/listwatcher"
+	WATCH_API     = "/registry/v3/microservices/:serviceId/watcher"
 )
 
 var (
@@ -35,7 +34,7 @@ func listwatch() {
 
 	path := url.URL{
 		Scheme: "ws",
-		Host:   SERVER_ADDRESS,
+		Host:   helper.GetServiceCenterAddress(),
 		Path:   strings.Replace(LISTWATCH_API, ":serviceId", serviceId, 1),
 	}
 	conn, _, err := websocket.DefaultDialer.Dial(path.String(), HEADERS)
@@ -60,7 +59,7 @@ func watch() {
 
 	path := url.URL{
 		Scheme: "ws",
-		Host:   SERVER_ADDRESS,
+		Host:   helper.GetServiceCenterAddress(),
 		Path:   strings.Replace(WATCH_API, ":serviceId", serviceId, 1),
 	}
 	conn, _, err := websocket.DefaultDialer.Dial(path.String(), HEADERS)
