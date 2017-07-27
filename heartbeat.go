@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/litte-cui/sc-tester/helper"
+	"github.com/little-cui/sc-tester/helper"
 	"io/ioutil"
 	"net/http"
 	"net/url"

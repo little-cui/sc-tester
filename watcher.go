@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
-	"github.com/litte-cui/sc-tester/helper"
+	"github.com/little-cui/sc-tester/helper"
 	"net/http"
 	"net/url"
 	"strings"
