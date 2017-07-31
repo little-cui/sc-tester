@@ -3,6 +3,7 @@ package helper
 import (
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
 )
@@ -84,8 +85,9 @@ func GetServiceCenterInstanceId(serviceId string) string {
 	if err != nil {
 		panic(err)
 	}
-	if len(instancesResponse.Instances) == 0 {
+	l := len(instancesResponse.Instances)
+	if l == 0 {
 		return ""
 	}
-	return instancesResponse.Instances[0].InstanceId
+	return instancesResponse.Instances[rand.Intn(l)].InstanceId
 }
