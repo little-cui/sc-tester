@@ -1,22 +1,22 @@
 package api
 
 import (
-	"net/url"
-	"strings"
-	"net/http"
-	"time"
 	"fmt"
 	"github.com/little-cui/sc-tester/helper"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
 )
 
 const (
 	HEARTBEAT_API = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
-	CREATE_API = "/registry/v3/microservices"
-	REGISTER_API = "/registry/v3/microservices/:serviceId/instances"
-	INSTANCE_API = "/registry/v3/instances"
-	EXIST_API = "/registry/v3/existence"
+	CREATE_API    = "/registry/v3/microservices"
+	REGISTER_API  = "/registry/v3/microservices/:serviceId/instances"
+	INSTANCE_API  = "/registry/v3/instances"
+	EXIST_API     = "/registry/v3/existence"
 )
 
 func Create() {
@@ -38,10 +38,10 @@ func Create() {
 
 	client := http.Client{}
 	req, err := http.NewRequest("GET", (&url.URL{
-		Scheme: "http",
-		Host: helper.GetServiceCenterAddress(),
-		Path: EXIST_API,
-		RawQuery: "type=microservice&appId="+appId+"&serviceName="+serviceName+"&version="+version,
+		Scheme:   "http",
+		Host:     helper.GetServiceCenterAddress(),
+		Path:     EXIST_API,
+		RawQuery: "type=microservice&appId=" + appId + "&serviceName=" + serviceName + "&version=" + version,
 	}).String(), nil)
 	req.Header = http.Header{
 		"X-Domain-Name": []string{"default"},
@@ -57,7 +57,7 @@ func Create() {
 		panic(err)
 	}
 	if resp.StatusCode == http.StatusOK {
-		if  time.Now().Sub(t) > time.Second {
+		if time.Now().Sub(t) > time.Second {
 			fmt.Println("exist:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 		}
 		return
@@ -161,14 +161,14 @@ func Find() {
 	resp, err := client.Do(&http.Request{
 		Method: "GET",
 		URL: &url.URL{
-			Scheme: "http",
-			Host:   helper.GetServiceCenterAddress(),
-			Path:   INSTANCE_API,
+			Scheme:   "http",
+			Host:     helper.GetServiceCenterAddress(),
+			Path:     INSTANCE_API,
 			RawQuery: "appId=Tester&serviceName=TestService&version=latest",
 		},
 		Header: http.Header{
 			"X-Domain-Name": []string{"default"},
-			"X-ConsumerId": []string{serviceId},
+			"X-ConsumerId":  []string{serviceId},
 		},
 	})
 	if err != nil {
