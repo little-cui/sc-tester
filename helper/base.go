@@ -15,11 +15,6 @@ const (
 	REGISTRY_VERSION      = "3.0.0"
 )
 
-var HEADERS http.Header = http.Header{
-	"X-Domain-Name": []string{"default"},
-	"Content-Type":  []string{"application/json"},
-}
-
 type ServiceExistResponse struct {
 	ServiceId string `json:"serviceId"`
 }
@@ -49,7 +44,10 @@ func GetServiceCenterId() string {
 	if err != nil {
 		panic(err)
 	}
-	req.Header = HEADERS
+	req.Header = http.Header{
+		"X-Domain-Name": []string{"default"},
+		"Content-Type":  []string{"application/json"},
+	}
 	resp, _ := http.DefaultClient.Do(req)
 	respBody, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
@@ -73,7 +71,10 @@ func GetServiceCenterInstanceId(serviceId string) string {
 	if err != nil {
 		panic(err)
 	}
-	req.Header = HEADERS
+	req.Header = http.Header{
+		"X-Domain-Name": []string{"default"},
+		"Content-Type":  []string{"application/json"},
+	}
 	req.Header.Set("X-ConsumerId", serviceId)
 	resp, _ := http.DefaultClient.Do(req)
 	respBody, _ := ioutil.ReadAll(resp.Body)
