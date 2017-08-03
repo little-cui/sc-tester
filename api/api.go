@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -15,11 +16,22 @@ const (
 	HEARTBEAT_API = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
 	CREATE_API    = "/registry/v3/microservices"
 	REGISTER_API  = "/registry/v3/microservices/:serviceId/instances"
-	INSTANCE_API  = "/registry/v3/instances"
+	FIND_API      = "/registry/v3/instances"
 	EXIST_API     = "/registry/v3/existence"
+	INSTANCE_API  = "/registry/v3/microservices/:serviceId/instances/:instanceId"
 )
 
-func Create() {
+func print(code, timeout bool, args ...interface{}) {
+	if code {
+		fmt.Fprintln(os.Stderr, args...)
+		return
+	}
+	if timeout {
+		fmt.Println(args...)
+	}
+}
+
+func CreateTesterService() {
 	appId, serviceName, version := "Tester", "TestService", fmt.Sprintf("%d.%d.%d.%d",
 		rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255))
 	r := strings.NewReader(fmt.Sprintf(`{
@@ -56,10 +68,10 @@ func Create() {
 	if err != nil {
 		panic(err)
 	}
+
+	print(false, time.Now().Sub(t) > time.Second,
+		"exist:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 	if resp.StatusCode == http.StatusOK {
-		if time.Now().Sub(t) > time.Second {
-			fmt.Println("exist:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
-		}
 		return
 	}
 
@@ -81,12 +93,11 @@ func Create() {
 	if err != nil {
 		panic(err)
 	}
-	if resp.StatusCode != http.StatusOK || time.Now().Sub(t) > time.Second {
-		fmt.Println("create:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
-	}
+	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
+		"Create:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
-func Register() {
+func RegisterSCInst() {
 	serviceId := helper.GetServiceCenterId()
 	r := strings.NewReader(fmt.Sprintf(`{
 	"instance": {
@@ -119,12 +130,11 @@ func Register() {
 	if err != nil {
 		panic(err)
 	}
-	if resp.StatusCode != http.StatusOK || time.Now().Sub(t) > time.Second {
-		fmt.Println("register:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
-	}
+	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
+		"Register:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
-func Heartbeat() {
+func HeartbeatSCInst() {
 	serviceId := helper.GetServiceCenterId()
 	instanceId := helper.GetServiceCenterInstanceId(serviceId)
 	u := url.URL{
@@ -148,14 +158,26 @@ func Heartbeat() {
 	if err != nil {
 		panic(err)
 	}
-	if resp.StatusCode != http.StatusOK || time.Now().Sub(t) > time.Second {
-		fmt.Println("heartbeat:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
-	}
-	// fmt.Println(resp.StatusCode, string(body), time.Now().Sub(t))
+	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
+		"HeartbeatSCInst:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
-func Find() {
+func FindTesterInsts() {
 	serviceId := helper.GetServiceCenterId()
+
+	versionRules := []string{
+		"latest",
+		"0+",
+		fmt.Sprintf("%d.%d.%d.%d",
+			rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255)) +
+			"-" +
+			fmt.Sprintf("%d.%d.%d.%d",
+				rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255)),
+		fmt.Sprintf("%d.%d.%d.%d",
+			rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255)),
+	}
+	v := versionRules[rand.Intn(len(versionRules))]
+
 	t := time.Now()
 	client := http.Client{}
 	resp, err := client.Do(&http.Request{
@@ -163,8 +185,8 @@ func Find() {
 		URL: &url.URL{
 			Scheme:   "http",
 			Host:     helper.GetServiceCenterAddress(),
-			Path:     INSTANCE_API,
-			RawQuery: "appId=Tester&serviceName=TestService&version=latest",
+			Path:     FIND_API,
+			RawQuery: "appId=Tester&serviceName=TestService&version=" + url.QueryEscape(v),
 		},
 		Header: http.Header{
 			"X-Domain-Name": []string{"default"},
@@ -178,7 +200,33 @@ func Find() {
 	if err != nil {
 		panic(err)
 	}
-	if resp.StatusCode != http.StatusOK || time.Now().Sub(t) > time.Second {
-		fmt.Println("find:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
+	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
+		"FindTesterInsts:", v, string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
+}
+
+func GetSCInsts() {
+	serviceId := helper.GetServiceCenterId()
+	t := time.Now()
+	client := http.Client{}
+	resp, err := client.Do(&http.Request{
+		Method: "GET",
+		URL: &url.URL{
+			Scheme: "http",
+			Host:   helper.GetServiceCenterAddress(),
+			Path:   strings.Replace(REGISTER_API, ":serviceId", serviceId, 1),
+		},
+		Header: http.Header{
+			"X-Domain-Name": []string{"default"},
+			"X-ConsumerId":  []string{serviceId},
+		},
+	})
+	if err != nil {
+		panic(err)
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
+		"GetSCInsts:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }

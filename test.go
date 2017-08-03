@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	INTERVAL   = 200 * time.Millisecond
+	INTERVAL   = 100 * time.Millisecond
 	CONCURRENT = 5
 )
 
@@ -21,10 +21,11 @@ func run(f func()) {
 
 func main() {
 	for i := 0; i < CONCURRENT; i++ {
-		run(api.Create)
-		run(api.Register)
-		run(api.Heartbeat)
-		run(api.Find)
+		run(api.CreateTesterService)
+		run(api.RegisterSCInst)
+		run(api.HeartbeatSCInst)
+		run(api.FindTesterInsts)
+		run(api.GetSCInsts)
 	}
 	<-make(chan struct{})
 }
