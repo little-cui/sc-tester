@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -48,10 +49,16 @@ func GetServiceCenterId() string {
 		"X-Domain-Name": []string{"default"},
 		"Content-Type":  []string{"application/json"},
 	}
-	resp, _ := http.DefaultClient.Do(req)
-	respBody, _ := ioutil.ReadAll(resp.Body)
+	resp, err := http.DefaultClient.Do(req)
+	if resp == nil {
+		fmt.Println("GetServiceCenterId:", resp, err)
+		return ""
+	}
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		panic(string(respBody))
+		// panic(string(respBody))
+		fmt.Println("GetServiceCenterId:", resp.StatusCode, err)
+		return ""
 	}
 	var serviceResponse ServiceExistResponse
 	err = json.Unmarshal(respBody, &serviceResponse)
@@ -76,10 +83,15 @@ func GetServiceCenterInstanceId(serviceId string) string {
 		"Content-Type":  []string{"application/json"},
 	}
 	req.Header.Set("X-ConsumerId", serviceId)
-	resp, _ := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
+	if resp == nil {
+		fmt.Println("GetServiceCenterInstanceId:", resp, err)
+		return ""
+	}
 	respBody, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		panic(string(respBody))
+		fmt.Println("GetServiceCenterInstanceId:", resp.StatusCode, err)
+		return ""
 	}
 	var instancesResponse InstancesResponse
 	err = json.Unmarshal(respBody, &instancesResponse)
