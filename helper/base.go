@@ -49,7 +49,8 @@ func GetServiceCenterId() string {
 		"X-Domain-Name": []string{"default"},
 		"Content-Type":  []string{"application/json"},
 	}
-	resp, err := http.DefaultClient.Do(req)
+	client := http.Client{}
+	resp, err := client.Do(req)
 	if resp == nil {
 		fmt.Println("GetServiceCenterId:", resp, err)
 		return ""
@@ -83,7 +84,8 @@ func GetServiceCenterInstanceId(serviceId string) string {
 		"Content-Type":  []string{"application/json"},
 	}
 	req.Header.Set("X-ConsumerId", serviceId)
-	resp, err := http.DefaultClient.Do(req)
+	client := http.Client{}
+	resp, err := client.Do(req)
 	if resp == nil {
 		fmt.Println("GetServiceCenterInstanceId:", resp, err)
 		return ""

@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	INTERVAL   = 1000 * time.Millisecond
-	CONCURRENT = 500
+	INTERVAL   = 100 * time.Millisecond
+	CONCURRENT = 10
 )
 
 func run(f func()) {
@@ -22,21 +22,21 @@ func run(f func()) {
 
 func main() {
 	t := time.Now()
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 6000; i++ {
 		api.CreateTesterService()
 	}
-	fmt.Println("Register 100 micro-service spend", time.Now().Sub(t))
+	fmt.Println("Register 6000 micro-service spend", time.Now().Sub(t))
 	t = time.Now()
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 50; i++ {
 		api.RegisterSCInst()
 	}
-	fmt.Println("Register 200 micro-service instances spend", time.Now().Sub(t))
+	fmt.Println("Register 50 micro-service instances spend", time.Now().Sub(t))
 	for i := 0; i < CONCURRENT; i++ {
 		//run(api.CreateTesterService)
 		//run(api.RegisterSCInst)
 		run(api.HeartbeatSCInst)
 		//run(api.FindTesterInsts)
-		run(api.GetSCInsts)
+		//run(api.GetSCInsts)
 	}
 	<-make(chan struct{})
 }

@@ -105,7 +105,7 @@ func RegisterSCInst() {
 		"endpoints":["rest://127.0.0.%d:30100"],
 		"hostName":"service_center_10_229_33_15",
 		"status":"UP",
-		"healthCheck":{"mode":"push","interval":2,"times":3},
+		"healthCheck":{"mode":"push","interval":1,"times":3},
 		"stage":"prod"
 	}
 }`, serviceId, rand.Intn(255)))
@@ -159,7 +159,7 @@ func HeartbeatSCInst() {
 		panic(err)
 	}
 	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
-		"HeartbeatSCInst:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
+		"HeartbeatSCInst:", instanceId, string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
 func FindTesterInsts() {
@@ -169,12 +169,12 @@ func FindTesterInsts() {
 		"latest",
 		"0+",
 		fmt.Sprintf("%d.%d.%d.%d",
-			rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255)) +
+			rand.Intn(128), rand.Intn(128), rand.Intn(128), rand.Intn(128)) +
 			"-" +
 			fmt.Sprintf("%d.%d.%d.%d",
-				rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255)),
+				rand.Intn(128), rand.Intn(128), rand.Intn(128), rand.Intn(128)),
 		fmt.Sprintf("%d.%d.%d.%d",
-			rand.Intn(255), rand.Intn(255), rand.Intn(255), rand.Intn(255)),
+			rand.Intn(128), rand.Intn(128), rand.Intn(128), rand.Intn(128)),
 	}
 	v := versionRules[rand.Intn(len(versionRules))]
 
