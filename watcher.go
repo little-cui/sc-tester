@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const (
@@ -44,11 +45,14 @@ func listwatch() {
 	for {
 		t, msg, err := conn.ReadMessage()
 		if err != nil {
-			panic(err)
+			fmt.Println("listwatcher:", err)
+			break
 		}
 		if t == websocket.TextMessage {
 			fmt.Println("listwatcher:", string(msg))
 		}
+		conn.WriteControl(websocket.PingMessage, []byte("sss"), time.Now().Add(10*time.Second))
+		conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(10*time.Second))
 	}
 	conn.Close()
 }
@@ -69,7 +73,8 @@ func watch() {
 	for {
 		t, msg, err := conn.ReadMessage()
 		if err != nil {
-			panic(err)
+			fmt.Println("watcher:", err)
+			break
 		}
 		if t == websocket.TextMessage {
 			fmt.Println("watcher:", string(msg))
