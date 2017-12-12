@@ -13,7 +13,7 @@ const (
 	SERVER_ADDRESS        = "127.0.0.1:30100"
 	REGISTRY_APP_ID       = "default"
 	REGISTRY_SERVICE_NAME = "SERVICECENTER"
-	REGISTRY_VERSION      = "3.0.0"
+	REGISTRY_VERSION      = "0.0.1"
 )
 
 type ServiceExistResponse struct {

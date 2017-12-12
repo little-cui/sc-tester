@@ -31,15 +31,16 @@ func init() {
 
 func listwatch() {
 	defer close(lwCh)
-	fmt.Println("start listwatcher...")
+	fmt.Printf("start listwatch %s...\n", serviceId)
 
 	path := url.URL{
 		Scheme: "ws",
 		Host:   helper.GetServiceCenterAddress(),
 		Path:   strings.Replace(LISTWATCH_API, ":serviceId", serviceId, 1),
 	}
-	conn, _, err := websocket.DefaultDialer.Dial(path.String(), HEADERS)
+	conn, resp, err := websocket.DefaultDialer.Dial(path.String(), HEADERS)
 	if err != nil {
+		fmt.Println(resp, err)
 		panic(err)
 	}
 	for {
@@ -52,22 +53,26 @@ func listwatch() {
 			fmt.Println("listwatcher:", string(msg))
 		}
 		conn.WriteControl(websocket.PingMessage, []byte("sss"), time.Now().Add(10*time.Second))
-		conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(10*time.Second))
+		go func() {
+			<-time.After(3 * time.Second)
+			conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(10*time.Second))
+		}()
 	}
 	conn.Close()
 }
 
 func watch() {
 	defer close(wCh)
-	fmt.Println("start watcher...")
+	fmt.Printf("start watch %s...\n", serviceId)
 
 	path := url.URL{
 		Scheme: "ws",
 		Host:   helper.GetServiceCenterAddress(),
 		Path:   strings.Replace(WATCH_API, ":serviceId", serviceId, 1),
 	}
-	conn, _, err := websocket.DefaultDialer.Dial(path.String(), HEADERS)
+	conn, resp, err := websocket.DefaultDialer.Dial(path.String(), HEADERS)
 	if err != nil {
+		fmt.Println(resp, err)
 		panic(err)
 	}
 	for {
@@ -85,7 +90,7 @@ func watch() {
 
 func main() {
 	serviceId = helper.GetServiceCenterId()
-	go listwatch()
+	//go listwatch()
 	go watch()
 
 	<-lwCh
