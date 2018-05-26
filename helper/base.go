@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"sync"
 )
 
 const (
@@ -39,7 +40,7 @@ func GetServiceCenterId() string {
 		Path:   "/registry/v3/existence",
 		RawQuery: "type=microservice&appId=" + REGISTRY_APP_ID +
 			"&serviceName=" + REGISTRY_SERVICE_NAME +
-			"&version=" + REGISTRY_VERSION,
+			"&version=latest&env=development",
 	}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
@@ -49,16 +50,17 @@ func GetServiceCenterId() string {
 		"X-Domain-Name": []string{"default"},
 		"Content-Type":  []string{"application/json"},
 	}
-	client := http.Client{}
+	client := NewClient()
 	resp, err := client.Do(req)
 	if resp == nil {
 		fmt.Println("GetServiceCenterId:", resp, err)
 		return ""
 	}
 	respBody, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		// panic(string(respBody))
-		fmt.Println("GetServiceCenterId:", resp.StatusCode, err)
+		fmt.Println("GetServiceCenterId:", resp.StatusCode, string(respBody), err)
 		return ""
 	}
 	var serviceResponse ServiceExistResponse
@@ -84,13 +86,14 @@ func GetServiceCenterInstanceId(serviceId string) string {
 		"Content-Type":  []string{"application/json"},
 	}
 	req.Header.Set("X-ConsumerId", serviceId)
-	client := http.Client{}
+	client := NewClient()
 	resp, err := client.Do(req)
 	if resp == nil {
 		fmt.Println("GetServiceCenterInstanceId:", resp, err)
 		return ""
 	}
 	respBody, _ := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		fmt.Println("GetServiceCenterInstanceId:", resp.StatusCode, err)
 		return ""
@@ -105,4 +108,19 @@ func GetServiceCenterInstanceId(serviceId string) string {
 		return ""
 	}
 	return instancesResponse.Instances[rand.Intn(l)].InstanceId
+}
+
+var c *http.Client
+var once sync.Once
+
+func NewClient() *http.Client {
+	once.Do(func() {
+		c = &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConns:        1000,
+				MaxIdleConnsPerHost: 1000,
+			},
+		}
+	})
+	return c
 }
