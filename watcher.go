@@ -75,21 +75,23 @@ func watch() {
 		fmt.Println(resp, err)
 		panic(err)
 	}
+	i := 0
 	for {
+		i++
 		t, msg, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("watcher:", err)
+			fmt.Println("watcher:", i, err)
 			break
 		}
 		if t == websocket.TextMessage {
-			fmt.Println("watcher:", string(msg))
+			fmt.Println("watcher:", i, string(msg))
 		}
 	}
 	conn.Close()
 }
 
 func main() {
-	serviceId = helper.GetServiceCenterId()
+	serviceId = "1"
 	//go listwatch()
 	go watch()
 

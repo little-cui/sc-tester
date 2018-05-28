@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/little-cui/sc-tester/helper"
 	"io/ioutil"
-	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -37,8 +36,9 @@ func print(code, timeout bool, args ...interface{}) {
 }
 
 func CreateTesterService() {
+	serviceId := rand.Intn(NUM)
 	appId, serviceName, version := TESTER_APP, TESTER_SVC, fmt.Sprintf("%d.%d.%d",
-		rand.Intn(10), rand.Intn(20), rand.Intn(60))
+		serviceId, rand.Intn(20), rand.Intn(600))
 	r := strings.NewReader(fmt.Sprintf(`{
 	"service":{
 		"serviceId":"%d",
@@ -47,12 +47,12 @@ func CreateTesterService() {
 		"version":"%s",
 		"level":"BACK",
 		"status":"UP",
-		"schemas":["%s"],
+		"schemas":["%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"],
 		"properties":{
 			"allowCrossApp":"true"
 		}
 	}
-}`, rand.Intn(NUM), appId, serviceName, version, strings.Repeat("x", 160)))
+}`, serviceId, appId, serviceName, version, strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160)))
 
 	client := helper.NewClient()
 	req, err := http.NewRequest("GET", (&url.URL{
@@ -107,15 +107,17 @@ func CreateTesterService() {
 
 func RegisterTesterInst() {
 	serviceId := fmt.Sprint(rand.Intn(NUM))
+	instanceId := fmt.Sprint(rand.Intn(10))
 	r := strings.NewReader(fmt.Sprintf(`{
 	"instance": {
 		"serviceId":"%s",
-		"endpoints":["rest://127.0.0.1:%d"],
+		"instanceId":"%s",
+		"endpoints":["rest://127.0.0.1:%s"],
 		"hostName":"tester_0_1_2_3",
 		"status":"UP",
-		"healthCheck":{"mode":"push","interval":30,"times":3},
+		"healthCheck":{"mode":"push","interval":30,"times":3}
 	}
-}`, serviceId, rand.Intn(math.MaxInt16)))
+}`, serviceId, instanceId, instanceId))
 	u := url.URL{
 		Scheme: "http",
 		Host:   helper.GetServiceCenterAddress(),
@@ -144,7 +146,7 @@ func RegisterTesterInst() {
 
 func HeartbeatTesterInst() {
 	serviceId := fmt.Sprint(rand.Intn(NUM))
-	instanceId := fmt.Sprint(rand.Intn(math.MaxInt16))
+	instanceId := fmt.Sprint(rand.Intn(10))
 	u := url.URL{
 		Scheme: "http",
 		Host:   helper.GetServiceCenterAddress(),
@@ -177,13 +179,13 @@ func FindTesterInsts() {
 	versionRules := []string{
 		"latest",
 		"0+",
-		fmt.Sprintf("%d.%d.%d",
-			rand.Intn(10), rand.Intn(20), rand.Intn(60)) +
+		fmt.Sprintf("%s.%d.%d",
+			serviceId, rand.Intn(1), rand.Intn(1)) +
 			"-" +
-			fmt.Sprintf("%d.%d.%d",
-				rand.Intn(10), rand.Intn(20), rand.Intn(60)),
-		fmt.Sprintf("%d.%d.%d",
-			rand.Intn(10), rand.Intn(20), rand.Intn(60)),
+			fmt.Sprintf("%s.%d.%d",
+				serviceId, rand.Intn(20), rand.Intn(600)),
+		fmt.Sprintf("%s.%d.%d",
+			serviceId, rand.Intn(20), rand.Intn(600)),
 	}
 	v := versionRules[rand.Intn(len(versionRules))]
 
@@ -211,7 +213,7 @@ func FindTesterInsts() {
 	}
 	resp.Body.Close()
 	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
-		"FindTesterInsts:", v, string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
+		"FindTesterInsts:", v, serviceId, string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
 func GetSCInsts() {
