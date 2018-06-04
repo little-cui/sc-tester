@@ -13,16 +13,19 @@ import (
 )
 
 const (
-	HEARTBEAT_API = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
-	CREATE_API    = "/registry/v3/microservices"
-	REGISTER_API  = "/registry/v3/microservices/:serviceId/instances"
-	FIND_API      = "/registry/v3/instances"
-	EXIST_API     = "/registry/v3/existence"
-	INSTANCE_API  = "/registry/v3/microservices/:serviceId/instances/:instanceId"
-	TESTER_DOMAIN = "default"
-	TESTER_APP    = "Tester"
-	TESTER_SVC    = "TestService"
-	NUM           = 12000
+	HEARTBEAT_API   = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
+	CREATE_API      = "/registry/v3/microservices"
+	REGISTER_API    = "/registry/v3/microservices/:serviceId/instances"
+	FIND_API        = "/registry/v3/instances"
+	EXIST_API       = "/registry/v3/existence"
+	INSTANCE_API    = "/registry/v3/microservices/:serviceId/instances/:instanceId"
+	TESTER_DOMAIN   = "default"
+	TESTER_APP      = "Tester"
+	TESTER_SVC      = "TestService"
+	NUM             = 120
+	SVC_PER_DOMAIN  = 500
+	verPerSvc       = 10
+	INST_PER_DOMAIN = 1000
 )
 
 func print(code, timeout bool, args ...interface{}) {
@@ -35,24 +38,31 @@ func print(code, timeout bool, args ...interface{}) {
 	}
 }
 
-func CreateTesterService() {
-	serviceId := rand.Intn(NUM)
-	appId, serviceName, version := TESTER_APP, TESTER_SVC, fmt.Sprintf("%d.%d.%d",
-		serviceId, rand.Intn(20), rand.Intn(600))
+func CreateTesterService(i, j int) {
+	serviceId := fmt.Sprint(j)
+	s := j % (SVC_PER_DOMAIN / verPerSvc)
+	v := j % SVC_PER_DOMAIN
+	appId, serviceName, version := TESTER_APP, TESTER_SVC, fmt.Sprintf("%s.%d.%d",
+		serviceId, s, v)
+
+	schemaIds := ""
+	for i := 0; i < 30; i++ {
+		schemaIds += fmt.Sprintf(",\"%s\"", strings.Repeat("x", 160))
+	}
 	r := strings.NewReader(fmt.Sprintf(`{
 	"service":{
-		"serviceId":"%d",
+		"serviceId":"%s",
 		"appId":"%s",
-		"serviceName":"%s",
+		"serviceName":"%s%d",
 		"version":"%s",
 		"level":"BACK",
 		"status":"UP",
-		"schemas":["%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"],
+		"schemas":[%s],
 		"properties":{
 			"allowCrossApp":"true"
 		}
 	}
-}`, serviceId, appId, serviceName, version, strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160), strings.Repeat("x", 160)))
+}`, serviceId, appId, serviceName, s, version, schemaIds[1:]))
 
 	client := helper.NewClient()
 	req, err := http.NewRequest("GET", (&url.URL{
@@ -62,7 +72,7 @@ func CreateTesterService() {
 		RawQuery: "type=microservice&appId=" + appId + "&serviceName=" + serviceName + "&version=" + version,
 	}).String(), nil)
 	req.Header = http.Header{
-		"X-Domain-Name": []string{TESTER_DOMAIN},
+		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(i)},
 		"Content-Type":  []string{"application/json"},
 	}
 	t := time.Now()
@@ -88,7 +98,7 @@ func CreateTesterService() {
 		Path:   CREATE_API,
 	}).String(), r)
 	req.Header = http.Header{
-		"X-Domain-Name": []string{TESTER_DOMAIN},
+		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(i)},
 		"Content-Type":  []string{"application/json"},
 	}
 	t = time.Now()
@@ -105,19 +115,23 @@ func CreateTesterService() {
 		"Create:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
-func RegisterTesterInst() {
-	serviceId := fmt.Sprint(rand.Intn(NUM))
-	instanceId := fmt.Sprint(rand.Intn(10))
+func RegisterTesterInst(i, s, j int) {
+	serviceId := fmt.Sprint(s)
+	instanceId := fmt.Sprint(j)
+	eps := ""
+	for i := 0; i < 30; i++ {
+		eps += fmt.Sprintf(",\"%s\"", strings.Repeat("x", 160))
+	}
 	r := strings.NewReader(fmt.Sprintf(`{
 	"instance": {
 		"serviceId":"%s",
 		"instanceId":"%s",
-		"endpoints":["rest://127.0.0.1:%s"],
+		"endpoints":[%s],
 		"hostName":"tester_0_1_2_3",
 		"status":"UP",
-		"healthCheck":{"mode":"push","interval":30,"times":3}
+		"healthCheck":{"mode":"push","interval":30,"times":20}
 	}
-}`, serviceId, instanceId, instanceId))
+}`, serviceId, instanceId, eps[1:]))
 	u := url.URL{
 		Scheme: "http",
 		Host:   helper.GetServiceCenterAddress(),
@@ -125,7 +139,7 @@ func RegisterTesterInst() {
 	}
 	req, err := http.NewRequest("POST", u.String(), r)
 	req.Header = http.Header{
-		"X-Domain-Name": []string{TESTER_DOMAIN},
+		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(i)},
 		"Content-Type":  []string{"application/json"},
 	}
 
@@ -144,9 +158,9 @@ func RegisterTesterInst() {
 		"Register:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
-func HeartbeatTesterInst() {
-	serviceId := fmt.Sprint(rand.Intn(NUM))
-	instanceId := fmt.Sprint(rand.Intn(10))
+func HeartbeatTesterInst(i, s, j int) {
+	serviceId := fmt.Sprint(s)
+	instanceId := fmt.Sprint(j)
 	u := url.URL{
 		Scheme: "http",
 		Host:   helper.GetServiceCenterAddress(),
@@ -154,7 +168,7 @@ func HeartbeatTesterInst() {
 	}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	req.Header = http.Header{
-		"X-Domain-Name": []string{TESTER_DOMAIN},
+		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(i)},
 		"Content-Type":  []string{"application/json"},
 	}
 
@@ -162,7 +176,9 @@ func HeartbeatTesterInst() {
 	client := helper.NewClient()
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		print(true, time.Now().Sub(t) > time.Second,
+			"HeartbeatTesterInst:", instanceId, err, "spend:", time.Now().Sub(t))
+		return
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

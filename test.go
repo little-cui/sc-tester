@@ -1,31 +1,40 @@
 package main
 
 import (
+	"fmt"
 	"github.com/little-cui/sc-tester/api"
 	"time"
 )
 
 const (
-	INTERVAL   = 100 * time.Millisecond
 	CONCURRENT = 100
 )
 
-func run(f func()) {
+func loop(d int, s int, i int) {
+	for {
+		<-time.After(30 * time.Second)
+		api.HeartbeatTesterInst(d, s, i)
+	}
+}
+
+func run(max, d int) {
 	go func() {
-		for {
-			f()
-			<-time.After(INTERVAL)
+		for j := 0; j < max; j++ {
+			api.CreateTesterService(d, j)
+			inst := j * 2
+			api.RegisterTesterInst(d, j, inst)
+			go loop(d, j, inst)
+			inst = j*2 + 1
+			api.RegisterTesterInst(d, j, inst)
+			go loop(d, j, inst)
 		}
+		fmt.Println("Register", max, "OK")
 	}()
 }
 
 func main() {
 	for i := 0; i < CONCURRENT; i++ {
-		run(api.CreateTesterService)
-		run(api.RegisterTesterInst)
-		run(api.HeartbeatTesterInst)
-		run(api.FindTesterInsts)
-		run(api.GetSCInsts)
+		run(api.SVC_PER_DOMAIN, i)
 	}
 	<-make(chan struct{})
 }
