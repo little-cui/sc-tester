@@ -78,7 +78,9 @@ func CreateTesterService(i, j int) {
 	t := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		print(true, time.Now().Sub(t) > time.Second,
+			"exist:", appId, serviceName, version, err, "spend:", time.Now().Sub(t))
+		return
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -104,7 +106,9 @@ func CreateTesterService(i, j int) {
 	t = time.Now()
 	resp, err = client.Do(req)
 	if err != nil {
-		panic(err)
+		print(true, time.Now().Sub(t) > time.Second,
+			"Create:", serviceId, err, "spend:", time.Now().Sub(t))
+		return
 	}
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -147,7 +151,9 @@ func RegisterTesterInst(i, s, j int) {
 	client := helper.NewClient()
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		print(true, time.Now().Sub(t) > time.Second,
+			"Register:", instanceId, err, "spend:", time.Now().Sub(t))
+		return
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

@@ -117,8 +117,8 @@ func NewClient() *http.Client {
 	once.Do(func() {
 		c = &http.Client{
 			Transport: &http.Transport{
-				MaxIdleConns:        1000,
-				MaxIdleConnsPerHost: 1000,
+				MaxIdleConns:        100000,
+				MaxIdleConnsPerHost: 100000,
 			},
 		}
 	})
