@@ -133,7 +133,7 @@ func RegisterTesterInst(i, s, j int) {
 		"endpoints":[%s],
 		"hostName":"tester_0_1_2_3",
 		"status":"UP",
-		"healthCheck":{"mode":"push","interval":30,"times":20}
+		"healthCheck":{"mode":"push","interval":30,"times":3}
 	}
 }`, serviceId, instanceId, eps[1:]))
 	u := url.URL{
