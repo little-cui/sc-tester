@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/little-cui/sc-tester/helper"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,7 +22,7 @@ const (
 	TESTER_APP      = "Tester"
 	TESTER_SVC      = "TestService"
 	NUM             = 120
-	SVC_PER_DOMAIN  = 500
+	SVC_PER_DOMAIN  = 200
 	verPerSvc       = 10
 	INST_PER_DOMAIN = 1000
 )
@@ -38,12 +37,12 @@ func print(code, timeout bool, args ...interface{}) {
 	}
 }
 
-func CreateTesterService(i, j int) {
-	serviceId := fmt.Sprint(j)
-	s := j % (SVC_PER_DOMAIN / verPerSvc)
-	v := j % SVC_PER_DOMAIN
+func CreateTesterService(d, s int) {
+	serviceId := fmt.Sprint(s)
+	m := s % (SVC_PER_DOMAIN / verPerSvc)
+	v := s % SVC_PER_DOMAIN
 	appId, serviceName, version := TESTER_APP, TESTER_SVC, fmt.Sprintf("%s.%d.%d",
-		serviceId, s, v)
+		serviceId, m, v)
 
 	schemaIds := ""
 	for i := 0; i < 30; i++ {
@@ -62,7 +61,7 @@ func CreateTesterService(i, j int) {
 			"allowCrossApp":"true"
 		}
 	}
-}`, serviceId, appId, serviceName, s, version, schemaIds[1:]))
+}`, serviceId, appId, serviceName, m, version, schemaIds[1:]))
 
 	client := helper.NewClient()
 	req, err := http.NewRequest("GET", (&url.URL{
@@ -72,7 +71,7 @@ func CreateTesterService(i, j int) {
 		RawQuery: "type=microservice&appId=" + appId + "&serviceName=" + serviceName + "&version=" + version,
 	}).String(), nil)
 	req.Header = http.Header{
-		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(i)},
+		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(d)},
 		"Content-Type":  []string{"application/json"},
 	}
 	t := time.Now()
@@ -100,7 +99,7 @@ func CreateTesterService(i, j int) {
 		Path:   CREATE_API,
 	}).String(), r)
 	req.Header = http.Header{
-		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(i)},
+		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(d)},
 		"Content-Type":  []string{"application/json"},
 	}
 	t = time.Now()
@@ -195,21 +194,11 @@ func HeartbeatTesterInst(i, s, j int) {
 		"HeartbeatTesterInst:", instanceId, string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
-func FindTesterInsts() {
-	serviceId := fmt.Sprint(NUM)
-
-	versionRules := []string{
-		"latest",
-		"0+",
-		fmt.Sprintf("%s.%d.%d",
-			serviceId, rand.Intn(1), rand.Intn(1)) +
-			"-" +
-			fmt.Sprintf("%s.%d.%d",
-				serviceId, rand.Intn(20), rand.Intn(600)),
-		fmt.Sprintf("%s.%d.%d",
-			serviceId, rand.Intn(20), rand.Intn(600)),
-	}
-	v := versionRules[rand.Intn(len(versionRules))]
+func FindTesterInsts(d, s int, _ int) {
+	serviceId := fmt.Sprint(s)
+	m := s % (SVC_PER_DOMAIN / verPerSvc)
+	appId, serviceName := TESTER_APP, TESTER_SVC+fmt.Sprint(m)
+	v := "0+"
 
 	t := time.Now()
 	client := helper.NewClient()
@@ -219,23 +208,27 @@ func FindTesterInsts() {
 			Scheme:   "http",
 			Host:     helper.GetServiceCenterAddress(),
 			Path:     FIND_API,
-			RawQuery: "appId=" + TESTER_APP + "&serviceName=" + TESTER_SVC + "&version=" + url.QueryEscape(v),
+			RawQuery: "appId=" + appId + "&serviceName=" + serviceName + "&version=" + url.QueryEscape(v),
 		},
 		Header: http.Header{
-			"X-Domain-Name": []string{TESTER_DOMAIN},
+			"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(d)},
 			"X-ConsumerId":  []string{serviceId},
 		},
 	})
 	if err != nil {
-		panic(err)
+		print(true, time.Now().Sub(t) > time.Second,
+			"FindTesterInsts:", appId, serviceName, v, err, "spend:", time.Now().Sub(t))
+		return
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		print(true, time.Now().Sub(t) > time.Second,
+			"FindTesterInsts:", appId, serviceName, v, "read body:", err, "spend:", time.Now().Sub(t))
+		return
 	}
 	resp.Body.Close()
 	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
-		"FindTesterInsts:", v, serviceId, string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
+		"FindTesterInsts:", appId, serviceName, v, serviceId, "resp:", len(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
 }
 
 func GetSCInsts() {
