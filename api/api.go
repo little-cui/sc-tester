@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/little-cui/sc-tester/helper"
 	"io/ioutil"
 	"net/http"
@@ -12,19 +13,19 @@ import (
 )
 
 const (
-	HEARTBEAT_API   = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
-	CREATE_API      = "/registry/v3/microservices"
-	REGISTER_API    = "/registry/v3/microservices/:serviceId/instances"
-	FIND_API        = "/registry/v3/instances"
-	EXIST_API       = "/registry/v3/existence"
-	INSTANCE_API    = "/registry/v3/microservices/:serviceId/instances/:instanceId"
-	TESTER_DOMAIN   = "default"
-	TESTER_APP      = "Tester"
-	TESTER_SVC      = "TestService"
-	NUM             = 120
-	SVC_PER_DOMAIN  = 200
-	verPerSvc       = 10
-	INST_PER_DOMAIN = 1000
+	HEARTBEAT_API  = "/registry/v3/microservices/:serviceId/instances/:instanceId/heartbeat"
+	CREATE_API     = "/registry/v3/microservices"
+	REGISTER_API   = "/registry/v3/microservices/:serviceId/instances"
+	FIND_API       = "/registry/v3/instances"
+	EXIST_API      = "/registry/v3/existence"
+	INSTANCE_API   = "/registry/v3/microservices/:serviceId/instances/:instanceId"
+	WATCH_API      = "/registry/v3/microservices/:serviceId/watcher"
+	TESTER_DOMAIN  = "default"
+	TESTER_APP     = "Tester"
+	TESTER_SVC     = "TestService"
+	NUM            = 120
+	SVC_PER_DOMAIN = 500
+	verPerSvc      = 10
 )
 
 func print(code, timeout bool, args ...interface{}) {
@@ -257,4 +258,34 @@ func GetSCInsts() {
 	resp.Body.Close()
 	print(resp.StatusCode != http.StatusOK, time.Now().Sub(t) > time.Second,
 		"GetSCInsts:", string(body), "status:", resp.StatusCode, "spend:", time.Now().Sub(t))
+}
+
+func Watch(d, s int, _ int) {
+	serviceId := fmt.Sprint(s)
+	path := url.URL{
+		Scheme: "ws",
+		Host:   helper.GetServiceCenterAddress(),
+		Path:   strings.Replace(WATCH_API, ":serviceId", serviceId, 1),
+	}
+	conn, resp, err := websocket.DefaultDialer.Dial(path.String(), http.Header{
+		"X-Domain-Name": []string{TESTER_DOMAIN + fmt.Sprint(d)},
+		"X-ConsumerId":  []string{serviceId},
+	})
+	if err != nil {
+		fmt.Println(resp, err)
+		return
+	}
+	i := 0
+	for {
+		i++
+		t, msg, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("watcher:", serviceId, "err:", i, err)
+			break
+		}
+		if t == websocket.TextMessage {
+			fmt.Println("watcher:", serviceId, "msg:", i, string(msg))
+		}
+	}
+	conn.Close()
 }

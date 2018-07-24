@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	CONCURRENT = 100
+	CONCURRENT = 50
 )
 
 func loop(d, s, i int, f func(d, s, i int)) {
@@ -21,22 +21,26 @@ func run(max, d int) {
 	go func() {
 		for j := 0; j < max; j++ {
 			api.CreateTesterService(d, j)
-			inst := j * 2
-			api.RegisterTesterInst(d, j, inst)
-			go loop(d, j, inst, func(d, s, i int) {
-				api.HeartbeatTesterInst(d, s, i)
-				api.FindTesterInsts(d, s, i)
+
+			inst1 := j * 2
+			api.RegisterTesterInst(d, j, inst1)
+			//go api.Watch(d, j, inst1)
+
+			inst2 := j*2 + 1
+			api.RegisterTesterInst(d, j, inst2)
+			//go api.Watch(d, j, inst2)
+
+			go loop(d, j, inst2, func(d, s, i int) {
+				api.HeartbeatTesterInst(d, s, inst1)
+				api.HeartbeatTesterInst(d, s, inst2)
+				api.FindTesterInsts(d, s, inst1)
 			})
-			inst = j*2 + 1
-			api.RegisterTesterInst(d, j, inst)
-			go loop(d, j, inst, api.HeartbeatTesterInst)
 		}
 		fmt.Println("Register", max, "OK")
 	}()
 }
 
 func main() {
-	fmt.Println("")
 	for i := 0; i < CONCURRENT; i++ {
 		run(api.SVC_PER_DOMAIN, i)
 	}

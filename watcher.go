@@ -46,7 +46,7 @@ func listwatch() {
 	for {
 		t, msg, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("listwatcher:", err)
+			fmt.Println("listwatcher:", "error:", err)
 			break
 		}
 		if t == websocket.TextMessage {
@@ -54,7 +54,7 @@ func listwatch() {
 		}
 		conn.WriteControl(websocket.PingMessage, []byte("sss"), time.Now().Add(10*time.Second))
 		go func() {
-			<-time.After(3 * time.Second)
+			<-time.After(4 * time.Second)
 			conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(10*time.Second))
 		}()
 	}
@@ -80,19 +80,27 @@ func watch() {
 		i++
 		t, msg, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("watcher:", i, err)
+			fmt.Println("watcher:", "error:", err)
 			break
 		}
 		if t == websocket.TextMessage {
 			fmt.Println("watcher:", i, string(msg))
 		}
+		go func() {
+			<-time.After(3 * time.Second)
+			conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(10*time.Second))
+		}()
 	}
 	conn.Close()
 }
 
 func main() {
-	serviceId = "008e8a047a1111e8b873fa163e17c38b"
-	//go listwatch()
+	serviceId = "0c22c09a804711e8873cfa163e17c38b"
+	go listwatch()
+	go watch()
+	go listwatch()
+	go watch()
+	go listwatch()
 	go watch()
 
 	<-lwCh
